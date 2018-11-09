@@ -75,7 +75,6 @@ module.exports = class MerkleTree {
 
     getHexProof (el) {
         const proof = this.getProof(el)
-
         return this.bufArrToHex(proof)
     }
 
@@ -120,8 +119,11 @@ module.exports = class MerkleTree {
         if (arr.some(el => !Buffer.isBuffer(el))) {
             throw new Error('Array is not an array of buffers')
         }
-
-        return '0x' + arr.map(el => el.toString('hex')).join('')
+        const rsp = [];
+        arr.forEach((el) => {
+            rsp.push(`0x${el.toString('hex')}`);
+        })
+        return rsp;
     }
 
     sortAndConcat (...args) {

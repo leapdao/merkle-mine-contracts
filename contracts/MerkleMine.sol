@@ -1,8 +1,8 @@
 pragma solidity ^0.4.21;
 
-import "zeppelin-solidity/contracts/MerkleProof.sol";
-import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "zeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/cryptography/MerkleProof.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
  * @title MerkleMine
@@ -21,10 +21,6 @@ contract MerkleMine {
     uint256 public totalGenesisRecipients;
     // Amount of tokens per recipient allocation. Equal to `totalGenesisTokens` / `totalGenesisRecipients`
     uint256 public tokensPerAllocation;
-    // Minimum ETH balance threshold for recipients included in genesis state
-    uint256 public balanceThreshold;
-    // Block number of genesis - used to determine which ETH accounts are included in the genesis state
-    uint256 public genesisBlock;
     // Start block where a third party caller (not the recipient) can generate and split the allocation with the recipient
     // As the current block gets closer to `callerAllocationEndBlock`, the caller receives a larger precentage of the allocation
     uint256 public callerAllocationStartBlock;
@@ -63,20 +59,14 @@ contract MerkleMine {
      * @dev MerkleMine constructor
      * @param _token ERC20 token being distributed
      * @param _genesisRoot Merkle root representing genesis state which encodes token recipients
-     * @param _totalGenesisTokens Total amount of tokens that can be generated
      * @param _totalGenesisRecipients Total number of recipients included in genesis state
-     * @param _balanceThreshold Minimum ETH balance threshold for recipients included in genesis state
-     * @param _genesisBlock Block number of genesis - used to determine which ETH accounts are included in the genesis state
      * @param _callerAllocationStartBlock Start block where a third party caller (not the recipient) can generate and split the allocation with the recipient
      * @param _callerAllocationEndBlock From this block onwards, a third party caller (not the recipient) can generate and claim the recipient's full allocation
      */
     function MerkleMine(
         address _token,
         bytes32 _genesisRoot,
-        uint256 _totalGenesisTokens,
         uint256 _totalGenesisRecipients,
-        uint256 _balanceThreshold,
-        uint256 _genesisBlock,
         uint256 _callerAllocationStartBlock,
         uint256 _callerAllocationEndBlock
     )
@@ -86,8 +76,6 @@ contract MerkleMine {
         require(_token != address(0));
         // Number of recipients must be non-zero
         require(_totalGenesisRecipients > 0);
-        // Genesis block must be at or before the current block
-        require(_genesisBlock <= block.number);
         // Start block for caller allocation must be after current block
         require(_callerAllocationStartBlock > block.number);
         // End block for caller allocation must be after caller allocation start block
@@ -95,11 +83,7 @@ contract MerkleMine {
 
         token = ERC20(_token);
         genesisRoot = _genesisRoot;
-        totalGenesisTokens = _totalGenesisTokens;
         totalGenesisRecipients = _totalGenesisRecipients;
-        tokensPerAllocation = _totalGenesisTokens.div(_totalGenesisRecipients);
-        balanceThreshold = _balanceThreshold;
-        genesisBlock = _genesisBlock;
         callerAllocationStartBlock = _callerAllocationStartBlock;
         callerAllocationEndBlock = _callerAllocationEndBlock;
         callerAllocationPeriod = _callerAllocationEndBlock.sub(_callerAllocationStartBlock);
@@ -111,8 +95,10 @@ contract MerkleMine {
      */
     function start() external isNotStarted {
         // Check that this contract has a sufficient balance for the generation period
-        require(token.balanceOf(this) >= totalGenesisTokens);
-
+        require(totalGenesisTokens == 0);
+        require(token.balanceOf(this) > 0);
+        totalGenesisTokens = token.balanceOf(this);
+        tokensPerAllocation = totalGenesisTokens.div(totalGenesisRecipients);
         started = true;
     }
 
@@ -125,11 +111,11 @@ contract MerkleMine {
      * @param _recipient Recipient of token allocation
      * @param _merkleProof Proof of recipient's inclusion in genesis state Merkle root
      */
-    function generate(address _recipient, bytes _merkleProof) external isStarted notGenerated(_recipient) {
+    function generate(address _recipient, bytes32[] _merkleProof) external isStarted notGenerated(_recipient) {
         // Check the Merkle proof
         bytes32 leaf = keccak256(_recipient);
         // _merkleProof must prove inclusion of _recipient in the genesis state root
-        require(MerkleProof.verifyProof(_merkleProof, genesisRoot, leaf));
+        require(MerkleProof.verify(_merkleProof, genesisRoot, leaf));
 
         generated[_recipient] = true;
 

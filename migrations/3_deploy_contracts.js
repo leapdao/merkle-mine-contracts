@@ -46,10 +46,7 @@ module.exports = function(deployer, network) {
                 MerkleMine,
                 token.address, // Use custom test ERC20 token on dev chain
                 config.genesisRoot,
-                config.totalGenesisTokens,
                 config.totalGenesisRecipients,
-                config.balanceThreshold,
-                0, // Set default genesis block on a dev chain to block 0
                 currentBlock + config.blocksToCliff,
                 currentBlock + config.blocksToCliff + config.callerAllocationPeriod
             )

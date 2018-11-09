@@ -1,46 +1,51 @@
-const KeystoreProvider = require("truffle-keystore-provider")
-const Web3 = require("web3")
+require('babel-register')
+require('babel-polyfill')
 
-const memoizeProviderCreator = () => {
-  let keystoreProviders = {}
+require('dotenv').config();
 
-  return (account, dataDir, providerUrl, readOnly) => {
-    if (readOnly) {
-      return new Web3.providers.HttpProvider(providerUrl)
-    } else {
-      if (providerUrl in keystoreProviders) {
-        return keystoreProviders[providerUrl]
-      } else {
-        const provider = new KeystoreProvider(account, dataDir, providerUrl)
-        keystoreProviders[providerUrl] = provider
-        return provider
-      }
-    }
-  }
-}
-
-const createProvider = memoizeProviderCreator()
+var HDWalletProvider = require('truffle-hdwallet-provider')
 
 module.exports = {
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 500
+    }
+  },
+  // See <http://truffleframework.com/docs/advanced/configuration>
+  // to customize your Truffle configuration!
   networks: {
-    dev: {
-      host: "localhost",
+    development: {
+      host: 'localhost',
       port: 8545,
-      network_id: "*"
-    },
-    rinkeby: {
-      provider: () => {
-        return createProvider(process.env.RINKEBY_ACCOUNT, process.env.DATA_DIR, "https://rinkeby.infura.io", process.env.READ_ONLY)
-      },
-      network_id: 4,
-      gas: 6600000
+      network_id: '*' // match any network
     },
     mainnet: {
-      provider: () => {
-        return createProvider(process.env.MAINNET_ACCOUNT, process.env.DATA_DIR, "https://mainnet.infura.io", process.env.READ_ONLY)
+      provider: function() {
+        return new HDWalletProvider(
+          process.env.MAINNET_MNEMONIC,
+          'https://mainnet.infura.io',
+          process.env.MAINNET_ACCOUNT_INDEX || 0
+        )
       },
-      network_id: 1,
-      gas: 6600000
+      network_id: '*'
+    },
+    rinkeby: {
+      provider: function() {
+        return new HDWalletProvider(
+          process.env.RINKEBY_MNEMONIC,
+          'https://rinkeby.infura.io',
+          process.env.RINKEBY_ACCOUNT_INDEX || 0
+        )
+      },
+      gasPrice: 10000000000, // 10 gwei
+      gas: 7000000,
+      network_id: 4
+    },
+    ganache: {
+      host: 'localhost',
+      port: 7545,
+      network_id: 5777
     }
   }
 }

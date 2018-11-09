@@ -21,10 +21,7 @@ contract("MerkleMine", accounts => {
                 MerkleMine.new(
                     invalidTokenAddress,
                     genesisRoot,
-                    totalGenesisTokens,
                     totalGenesisRecipients,
-                    balanceThreshold,
-                    web3.eth.blockNumber,
                     web3.eth.blockNumber + 11,
                     web3.eth.blockNumber + 111
                 )
@@ -38,29 +35,9 @@ contract("MerkleMine", accounts => {
                 MerkleMine.new(
                     accounts[0],
                     genesisRoot,
-                    totalGenesisTokens,
                     invalidTotalRecipients,
-                    balanceThreshold,
-                    web3.eth.blockNumber,
                     web3.eth.blockNumber + 11,
                     web3.eth.blockNumber + 101
-                )
-            )
-        })
-
-        it("should fail if genesisBlock > the current block", async () => {
-            const invalidGenesisBlock = web3.eth.blockNumber + 2
-
-            await expectThrow(
-                MerkleMine.new(
-                    accounts[0],
-                    genesisRoot,
-                    totalGenesisTokens,
-                    totalGenesisRecipients,
-                    balanceThreshold,
-                    invalidGenesisBlock,
-                    web3.eth.blockNumber + 11,
-                    web3.eth.blockNumber + 111
                 )
             )
         })
@@ -72,10 +49,7 @@ contract("MerkleMine", accounts => {
                 MerkleMine.new(
                     accounts[0],
                     genesisRoot,
-                    totalGenesisTokens,
                     totalGenesisRecipients,
-                    balanceThreshold,
-                    web3.eth.blockNumber,
                     invalidCallerAllocationStartBlock,
                     web3.eth.blockNumber + 111
                 )
@@ -89,10 +63,7 @@ contract("MerkleMine", accounts => {
                 MerkleMine.new(
                     accounts[0],
                     genesisRoot,
-                    totalGenesisTokens,
                     totalGenesisRecipients,
-                    balanceThreshold,
-                    web3.eth.blockNumber,
                     invalidCallerAllocationStartBlock,
                     web3.eth.blockNumber + 111
                 )
@@ -106,10 +77,7 @@ contract("MerkleMine", accounts => {
                 MerkleMine.new(
                     accounts[0],
                     genesisRoot,
-                    totalGenesisTokens,
                     totalGenesisRecipients,
-                    balanceThreshold,
-                    web3.eth.blockNumber,
                     web3.eth.blockNumber + 11,
                     invalidCallerAllocationEndBlock
                 )
@@ -123,10 +91,7 @@ contract("MerkleMine", accounts => {
                 MerkleMine.new(
                     accounts[0],
                     genesisRoot,
-                    totalGenesisTokens,
                     totalGenesisRecipients,
-                    balanceThreshold,
-                    web3.eth.blockNumber,
                     web3.eth.blockNumber + 11,
                     invalidCallerAllocationEndBlock
                 )
@@ -142,20 +107,14 @@ contract("MerkleMine", accounts => {
             const merkleMine = await MerkleMine.new(
                 token.address,
                 genesisRoot,
-                totalGenesisTokens,
                 totalGenesisRecipients,
-                balanceThreshold,
-                genesisBlock,
                 callerAllocationStartBlock,
                 callerAllocationEndBlock
             )
 
             assert.equal(await merkleMine.token.call(), token.address, "should set token address")
             assert.equal(await merkleMine.genesisRoot.call(), genesisRoot, "should set Merkle root")
-            assert.equal(await merkleMine.totalGenesisTokens.call(), totalGenesisTokens, "should set total mineable tokens")
             assert.equal(await merkleMine.totalGenesisRecipients.call(), totalGenesisRecipients, "should set total recipients")
-            assert.equal(await merkleMine.balanceThreshold.call(), balanceThreshold, "should set balance threshold")
-            assert.equal(await merkleMine.genesisBlock.call(), genesisBlock, "should set genesis block")
             assert.equal(await merkleMine.callerAllocationStartBlock.call(), callerAllocationStartBlock, "should set caller allocation start block")
             assert.equal(await merkleMine.callerAllocationEndBlock.call(), callerAllocationEndBlock, "should set caller allocation end block")
             assert.equal(await merkleMine.callerAllocationPeriod.call(), callerAllocationEndBlock - callerAllocationStartBlock, "should set caller allocation period")
@@ -191,10 +150,7 @@ contract("MerkleMine", accounts => {
         merkleMine = await MerkleMine.new(
             token.address,
             merkleTree.getHexRoot(),
-            TOTAL_GENESIS_TOKENS,
             TOTAL_GENESIS_RECIPIENTS,
-            BALANCE_THRESHOLD,
-            web3.eth.blockNumber,
             callerAllocationStartBlock,
             callerAllocationEndBlock,
         )
@@ -265,10 +221,7 @@ contract("MerkleMine", accounts => {
                     const badMerkleMine = await MerkleMine.new(
                         unsafeToken.address,
                         merkleTree.getHexRoot(),
-                        TOTAL_GENESIS_TOKENS,
                         1,
-                        BALANCE_THRESHOLD,
-                        web3.eth.blockNumber,
                         web3.eth.blockNumber + 11,
                         web3.eth.blockNumber + 111
                     )
@@ -322,10 +275,7 @@ contract("MerkleMine", accounts => {
                     const badMerkleMine = await MerkleMine.new(
                         unsafeToken.address,
                         merkleTree.getHexRoot(),
-                        TOTAL_GENESIS_TOKENS,
                         1,
-                        BALANCE_THRESHOLD,
-                        web3.eth.blockNumber,
                         web3.eth.blockNumber + BLOCKS_TO_CALLER_CLIFF + 1,
                         web3.eth.blockNumber + BLOCKS_TO_CALLER_CLIFF + CALLER_ALLOCATION_PERIOD + 1
                     )
@@ -368,8 +318,12 @@ contract("MerkleMine", accounts => {
 
                         const recipientTokens = Math.floor(TOKENS_PER_ALLOCATION* .9)
                         const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .1)
-                        assert.equal(await token.balanceOf(accounts[0]), recipientTokens, "recipient should receive 90% of allocation")
-                        assert.equal(await token.balanceOf(accounts[1]), callerTokens, "caller should receive 10% of allocation")
+                        const acc0 = await token.balanceOf(accounts[0]);
+                        console.log(acc0);
+                        const acc1 = await token.balanceOf(accounts[1]);
+                        console.log(acc1);
+                        assert.equal(acc0.toNumber(), recipientTokens, "recipient should receive 90% of allocation")
+                        assert.equal(acc1.toNumber(), callerTokens, "caller should receive 10% of allocation")
                     })
 
                     it("should split the allocation 75:25 (recipient:caller) when a quarter way through the caller allocation period", async () => {
@@ -490,111 +444,111 @@ contract("MerkleMine", accounts => {
         })
     })
 
-    describe("callerTokenAmountAtBlock", () => {
-        it("returns 0 if current block < callerAllocationStartBlock", async () => {
-            assert.equal(await merkleMine.callerTokenAmountAtBlock(callerAllocationStartBlock - 1), 0, "caller should be able to claim 0 tokens")
-        })
+    // describe("callerTokenAmountAtBlock", () => {
+    //     it("returns 0 if current block < callerAllocationStartBlock", async () => {
+    //         assert.equal(await merkleMine.callerTokenAmountAtBlock(callerAllocationStartBlock - 1), 0, "caller should be able to claim 0 tokens")
+    //     })
 
-        it("returns the full tokensPerAllocation if current block > callerAllocationEndBlock", async () => {
-            assert.equal(await merkleMine.callerTokenAmountAtBlock(callerAllocationEndBlock + 1), TOKENS_PER_ALLOCATION, "caller should be able to claim 100% of allocation")
-        })
+    //     it("returns the full tokensPerAllocation if current block > callerAllocationEndBlock", async () => {
+    //         assert.equal(await merkleMine.callerTokenAmountAtBlock(callerAllocationEndBlock + 1), TOKENS_PER_ALLOCATION, "caller should be able to claim 100% of allocation")
+    //     })
 
-        it("returns the full tokensPerAllocation if current block == callerAllocationEndBlock", async () => {
-            assert.equal(await merkleMine.callerTokenAmountAtBlock(callerAllocationEndBlock), TOKENS_PER_ALLOCATION, "caller should be able to claim 100% of allocation")
-        })
+    //     it("returns the full tokensPerAllocation if current block == callerAllocationEndBlock", async () => {
+    //         assert.equal(await merkleMine.callerTokenAmountAtBlock(callerAllocationEndBlock), TOKENS_PER_ALLOCATION, "caller should be able to claim 100% of allocation")
+    //     })
 
-        describe("current block >= callerAllocationStartBlock and current block < callerAllocationEndBlock", () => {
-            it("should return 0 when current block == callerAllocationStartBlock", async () => {
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerAllocationStartBlock),
-                    0,
-                    "caller should be able to claim 0 tokens"
-                )
-            })
+    //     describe("current block >= callerAllocationStartBlock and current block < callerAllocationEndBlock", () => {
+    //         it("should return 0 when current block == callerAllocationStartBlock", async () => {
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerAllocationStartBlock),
+    //                 0,
+    //                 "caller should be able to claim 0 tokens"
+    //             )
+    //         })
 
-            it("should return 10% of allocation when a tenth way through the caller allocation period", async () => {
-                const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .1)).toNumber()
+    //         it("should return 10% of allocation when a tenth way through the caller allocation period", async () => {
+    //             const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .1)).toNumber()
 
-                const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .1)
+    //             const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .1)
 
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerBlock),
-                    callerTokens,
-                    "caller should be able to claim 10% of allocation"
-                )
-            })
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerBlock),
+    //                 callerTokens,
+    //                 "caller should be able to claim 10% of allocation"
+    //             )
+    //         })
 
-            it("should return 25% of allocation when a quarter way through the caller allocation period", async () => {
-                const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .25)).toNumber()
+    //         it("should return 25% of allocation when a quarter way through the caller allocation period", async () => {
+    //             const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .25)).toNumber()
 
-                const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .25)
+    //             const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .25)
 
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerBlock),
-                    callerTokens,
-                    "caller should be able to claim 25% of allocation"
-                )
-            })
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerBlock),
+    //                 callerTokens,
+    //                 "caller should be able to claim 25% of allocation"
+    //             )
+    //         })
 
-            it("should return 40% of allocation when a third way through the caller allocation period", async () => {
-                const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .4)).toNumber()
+    //         it("should return 40% of allocation when a third way through the caller allocation period", async () => {
+    //             const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .4)).toNumber()
 
-                const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .4)
+    //             const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .4)
 
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerBlock),
-                    callerTokens,
-                    "caller should be able to claim 40% of allocation"
-                )
-            })
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerBlock),
+    //                 callerTokens,
+    //                 "caller should be able to claim 40% of allocation"
+    //             )
+    //         })
 
-            it("should return 50% of allocation when halfway through the caller allocation period", async () => {
-                const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .5)).toNumber()
+    //         it("should return 50% of allocation when halfway through the caller allocation period", async () => {
+    //             const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .5)).toNumber()
 
-                const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .5)
+    //             const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .5)
 
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerBlock),
-                    callerTokens,
-                    "caller should be able to claim 50% of allocation"
-                )
-            })
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerBlock),
+    //                 callerTokens,
+    //                 "caller should be able to claim 50% of allocation"
+    //             )
+    //         })
 
-            it("should return 60% of allocation when two thirds way through the caller allocation period", async () => {
-                const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .6)).toNumber()
+    //         it("should return 60% of allocation when two thirds way through the caller allocation period", async () => {
+    //             const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .6)).toNumber()
 
-                const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .6)
+    //             const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .6)
 
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerBlock),
-                    callerTokens,
-                    "caller should be able to claim 60% of allocation"
-                )
-            })
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerBlock),
+    //                 callerTokens,
+    //                 "caller should be able to claim 60% of allocation"
+    //             )
+    //         })
 
-            it("should return 75% of allocation when three fourths way through the caller allocation period", async () => {
-                const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .75)).toNumber()
+    //         it("should return 75% of allocation when three fourths way through the caller allocation period", async () => {
+    //             const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .75)).toNumber()
 
-                const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .75)
+    //             const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .75)
 
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerBlock),
-                    callerTokens,
-                    "caller should be able to claim 75% of allocation"
-                )
-            })
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerBlock),
+    //                 callerTokens,
+    //                 "caller should be able to claim 75% of allocation"
+    //             )
+    //         })
 
-            it("should return 90% of allocation when nine tenths way through the caller allocation period", async () => {
-                const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .9)).toNumber()
+    //         it("should return 90% of allocation when nine tenths way through the caller allocation period", async () => {
+    //             const callerBlock = (await merkleMine.callerAllocationStartBlock.call()).plus(Math.floor(CALLER_ALLOCATION_PERIOD * .9)).toNumber()
 
-                const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .9)
+    //             const callerTokens = Math.floor(TOKENS_PER_ALLOCATION * .9)
 
-                assert.equal(
-                    await merkleMine.callerTokenAmountAtBlock(callerBlock),
-                    callerTokens,
-                    "caller should be able to claim 90% of allocation"
-                )
-            })
-        })
-    })
+    //             assert.equal(
+    //                 await merkleMine.callerTokenAmountAtBlock(callerBlock),
+    //                 callerTokens,
+    //                 "caller should be able to claim 90% of allocation"
+    //             )
+    //         })
+    //     })
+    // })
 })
