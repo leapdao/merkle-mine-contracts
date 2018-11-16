@@ -1,6 +1,5 @@
 pragma solidity ^0.4.24;
 
-import "./MerkleProof.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -99,7 +98,7 @@ contract MerkleMine {
     bytes32 leaf = keccak256(abi.encodePacked(_recipient));
 
     // _merkleProof must prove inclusion of _recipient in the genesis state root
-    require(MerkleProof.verify(_merkleProof, genesisRoot, leaf));
+    require(verify(_merkleProof, genesisRoot, leaf));
 
     generated[_recipient] = true;
 
@@ -151,5 +150,37 @@ contract MerkleMine {
       uint256 callerAllocationPeriod = callerAllocationEndBlock.sub(callerAllocationStartBlock);
       return tokensPerAllocation.mul(blocksSinceCallerAllocationStartBlock).div(callerAllocationPeriod);
     }
+  }
+
+  /**
+   * @dev Verifies a Merkle proof proving the existence of a leaf in a Merkle tree. Assumes that each pair of leaves
+   * and each pair of pre-images are sorted.
+   * @param proof Merkle proof containing sibling hashes on the branch from the leaf to the root of the Merkle tree
+   * @param root Merkle root
+   * @param leaf Leaf of Merkle tree
+   */
+  function verify(bytes32[] proof, bytes32 root, bytes32 leaf) internal pure returns (bool) {
+    bytes32 computedHash = leaf;
+
+    for (uint256 i = 0; i < proof.length; i++) {
+      bytes32 proofElement = proof[i];
+
+      if (computedHash < proofElement) {
+        assembly {
+          mstore(0, computedHash)
+          mstore(0x20, proofElement)
+          computedHash := keccak256(0, 0x40)
+        }
+      } else {
+        assembly {
+          mstore(0, proofElement)
+          mstore(0x20, computedHash)
+          computedHash := keccak256(0, 0x40)
+        }
+      }
+    }
+
+    // Check if the computed hash (root) is equal to the provided root
+    return computedHash == root;
   }
 }

@@ -32,8 +32,6 @@ module.exports = function(deployer, network) {
                 config.genesisRoot,
                 config.totalGenesisTokens,
                 config.totalGenesisRecipients,
-                config.balanceThreshold,
-                config.genesisBlock,
                 currentBlock + config.blocksToCliff,
                 currentBlock + config.blocksToCliff + config.callerAllocationPeriod
             )
