@@ -1,8 +1,8 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.24;
 
-import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 
-contract TestToken is MintableToken {
+contract TestToken is ERC20Mintable {
     string public name = "Test Token";
     uint8 public decimals = 18;
 }
