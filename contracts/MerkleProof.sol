@@ -33,16 +33,12 @@ library MerkleProof {
           mstore(0x20, proofElement)
           computedHash := keccak256(0, 0x40)
         }
-        // Hash(current computed hash + current element of the proof)
-        //computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
       } else {
         assembly {
           mstore(0, proofElement)
           mstore(0x20, computedHash)
           computedHash := keccak256(0, 0x40)
         }
-        // Hash(current element of the proof + current computed hash)
-        //computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
       }
     }
 

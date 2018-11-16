@@ -19,18 +19,12 @@ contract MerkleMine {
   uint256 public totalGenesisTokens;
   // Total number of recipients included in genesis state
   uint256 public totalGenesisRecipients;
-  // Amount of tokens per recipient allocation. Equal to `totalGenesisTokens` / `totalGenesisRecipients`
-  uint256 public tokensPerAllocation;
+
   // Start block where a third party caller (not the recipient) can generate and split the allocation with the recipient
   // As the current block gets closer to `callerAllocationEndBlock`, the caller receives a larger precentage of the allocation
   uint256 public callerAllocationStartBlock;
   // From this block onwards, a third party caller (not the recipient) can generate and claim the recipient's full allocation
   uint256 public callerAllocationEndBlock;
-  // Number of blocks in the caller allocation period as defined by `callerAllocationEndBlock` - `callerAllocationStartBlock`
-  uint256 public callerAllocationPeriod;
-
-  // Track if the generation process is started
-  bool public started;
 
   // Track the already generated allocations for recipients
   mapping (address => bool) public generated;
@@ -43,13 +37,13 @@ contract MerkleMine {
 
   // Check that the generation period is started
   modifier isStarted() {
-      require(started);
+      require(totalGenesisTokens > 0);
       _;
   }
 
   // Check that the generation period is not started
   modifier isNotStarted() {
-      require(!started);
+      require(totalGenesisTokens == 0);
       _;
   }
 
@@ -78,7 +72,6 @@ contract MerkleMine {
     totalGenesisRecipients = _totalGenesisRecipients;
     callerAllocationStartBlock = _callerAllocationStartBlock;
     callerAllocationEndBlock = _callerAllocationEndBlock;
-    callerAllocationPeriod = _callerAllocationEndBlock.sub(_callerAllocationStartBlock);
   }
 
   /**
@@ -90,8 +83,6 @@ contract MerkleMine {
     require(totalGenesisTokens == 0);
     require(token.balanceOf(this) > 0);
     totalGenesisTokens = token.balanceOf(this);
-    tokensPerAllocation = totalGenesisTokens.div(totalGenesisRecipients);
-    started = true;
   }
 
   /**
@@ -113,6 +104,7 @@ contract MerkleMine {
     generated[_recipient] = true;
 
     address callerAddr = msg.sender;
+    uint256 tokensPerAllocation = totalGenesisTokens.div(totalGenesisRecipients);
 
     if (callerAddr == _recipient) {
       // If the caller is the recipient, transfer the full allocation to the caller/recipient
@@ -144,6 +136,7 @@ contract MerkleMine {
    * @param _blockNumber Block at which to compute the amount of tokens claimable by a third party caller
    */
   function callerTokenAmountAtBlock(uint256 _blockNumber) public view returns (uint256) {
+    uint256 tokensPerAllocation = totalGenesisTokens.div(totalGenesisRecipients);
     if (_blockNumber < callerAllocationStartBlock) {
       // If the block is before the start of the caller allocation period, the third party caller can claim nothing
       return 0;
@@ -155,6 +148,7 @@ contract MerkleMine {
       // of the recipient's allocation based on a linear curve - as more blocks pass in the caller allocation
       // period, the amount claimable by the third party caller increases linearly
       uint256 blocksSinceCallerAllocationStartBlock = _blockNumber.sub(callerAllocationStartBlock);
+      uint256 callerAllocationPeriod = callerAllocationEndBlock.sub(callerAllocationStartBlock);
       return tokensPerAllocation.mul(blocksSinceCallerAllocationStartBlock).div(callerAllocationPeriod);
     }
   }
